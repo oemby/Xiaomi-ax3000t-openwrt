@@ -225,7 +225,11 @@ jobs:
         grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
         [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
         echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
-
+             # 最终ccache统计
+        if [ "$ENABLE_CCACHE" = "true" ]; then
+          echo "最终ccache统计:"
+          ccache -s
+        fi
     - name: Check space usage
       if: (!cancelled())
       run: df -hT
