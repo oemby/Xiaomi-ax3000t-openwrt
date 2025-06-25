@@ -8,7 +8,7 @@
 # Description: Build OpenWrt using GitHub Actions
 #
 
-name: Build OpenWrt
+name: (CCache Enabled) Build OpenWrt
 
 on:
   repository_dispatch:
@@ -25,7 +25,7 @@ env:
   REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
-  CONFIG_FILE: .config
+  CONFIG_FILE: c.config
   DIY_P1_SH: diy-part1.sh
   DIY_P2_SH: diy-part2.sh
   UPLOAD_BIN_DIR: false
@@ -34,8 +34,14 @@ env:
   UPLOAD_WETRANSFER: false
   UPLOAD_RELEASE: true
   CACHE_TOOLCHAIN: true
+# 新增优化相关环境变量
+  ENABLE_CCACHE: true
+  CCACHE_SIZE: 15G
+  ENABLE_TMPFS: true
+  TMPFS_SIZE: 8G
+  PARALLEL_JOBS: auto
+  USE_CHINA_MIRROR: false
   TZ: Asia/Shanghai
-
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -77,6 +83,40 @@ jobs:
         temp-reserve-mb: 512
         root-reserve-mb: 2048
 
+    - name: Setup Compilation Optimization
+      run: |
+        echo "⚡ 配置编译优化..."
+        
+        # 配置ccache
+        if [ "$ENABLE_CCACHE" = "true" ]; then
+          mkdir -p ~/.ccache
+          echo "max_size = $CCACHE_SIZE" > ~/.ccache/ccache.conf
+          echo "compression = true" >> ~/.ccache/ccache.conf
+          echo "compress_level = 6" >> ~/.ccache/ccache.conf
+          echo "hash_dir = false" >> ~/.ccache/ccache.conf
+          export PATH="/usr/lib/ccache:$PATH"
+          export CCACHE_DIR="$HOME/.ccache"
+          ccache -M $CCACHE_SIZE
+          ccache -s
+          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
+          echo "PATH=/usr/lib/ccache:$PATH" >> $GITHUB_ENV
+        fi
+        
+        # 配置tmpfs加速编译
+        if [ "$ENABLE_TMPFS" = "true" ]; then
+          sudo mkdir -p /mnt/openwrt-tmp
+          sudo mount -t tmpfs -o size=$TMPFS_SIZE tmpfs /mnt/openwrt-tmp
+          sudo chown runner:runner /mnt/openwrt-tmp
+          echo "TMPFS_PATH=/mnt/openwrt-tmp" >> $GITHUB_ENV
+        fi
+        
+        # 设置编译线程数
+        if [ "$PARALLEL_JOBS" = "auto" ]; then
+          echo "MAKE_JOBS=$OPTIMAL_JOBS" >> $GITHUB_ENV
+        else
+          echo "MAKE_JOBS=$PARALLEL_JOBS" >> $GITHUB_ENV
+        fi
+
     - name: Checkout
       uses: actions/checkout@main
 
@@ -114,6 +154,17 @@ jobs:
         ccache: true
         mixkey: ${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
         prefix: ${{ env.OPENWRT_PATH }}
+
+    - name: Cache ccache
+      if: env.ENABLE_CCACHE == 'true'
+      uses: actions/cache@v3
+      with:
+        path: ~/.ccache
+        key: ccache-${{ env.SOURCE_REPO }}-${{ env.DEVICE_TARGET }}-${{ github.sha }}
+        restore-keys: |
+          ccache-${{ env.SOURCE_REPO }}-${{ env.DEVICE_TARGET }}-
+          ccache-${{ env.SOURCE_REPO }}-
+      
       
     - name: Load custom feeds
       run: |
@@ -242,7 +293,7 @@ jobs:
         tag: ${{ steps.tag.outputs.release_tag }}
         artifacts: ${{ env.FIRMWARE }}/*
         body: |
-          **This is OpenWrt Firmware for XiaoMi AX3000T**
+          **This is OpenWrt Firmware for XiaoMi AX3000T (Optimized Build)**
           ### 📒 固件信息
           - 💻 平台架构: mediatek-filogic
           - ⚽ 固件源码: ${{ env.REPO_URL }}
@@ -250,9 +301,28 @@ jobs:
           - 🚀 内核版本: ${{ env.KERNEL }}
           - 🌐 默认地址: 192.168.11.1
           - 🔑 默认密码: password
+          ### ⚡ 编译优化
+          - 🔧 ccache加速: ${{ env.ENABLE_CCACHE }}
+          - 🚀 tmpfs加速: ${{ env.ENABLE_TMPFS }}
+          - 🧵 编译线程: ${{ env.MAKE_JOBS }}
+          - 🌏 CN镜像: ${{ env.USE_CHINA_MIRROR }}
           ### 🧊 固件版本
           - 固件编译前最后一次➦[主源码](${{ env.REPO_URL }})更新记录
           - ${{ env.COMMIT_AUTHOR }}
           - ${{ env.COMMIT_DATE }}
           - ${{ env.COMMIT_MESSAGE }}
           - ${{ env.COMMIT_HASH }}
+
+    - name: Cleanup
+      if: always()
+      run: |
+        echo "🧹 清理临时文件..."
+        # 清理tmpfs
+        if [ -n "$TMPFS_PATH" ] && mountpoint -q "$TMPFS_PATH"; then
+          sudo umount "$TMPFS_PATH" || true
+        fi
+        # 显示最终ccache统计
+        if [ "$ENABLE_CCACHE" = "true" ]; then
+          echo "最终ccache统计:"
+          ccache -s || true
+        fi
