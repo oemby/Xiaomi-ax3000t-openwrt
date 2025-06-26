@@ -117,7 +117,7 @@ jobs:
 
     - name: Cache Toolchain
       if: env.CACHE_TOOLCHAIN == 'true'
-      uses: oemby/cachewrtbuild@main
+      uses: HiGarfield/cachewrtbuild@main
       with:
         ccache: false
         mixkey: ${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
