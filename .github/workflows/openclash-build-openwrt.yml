@@ -155,11 +155,11 @@ jobs:
           # 添加 OpenClash 配置
           echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
           
-          # 添加 OpenClash 相关依赖
-          echo "CONFIG_PACKAGE_kmod-tun=y" >> .config
-          echo "CONFIG_PACKAGE_kmod-inet-diag=y" >> .config
-          echo "CONFIG_PACKAGE_iptables-mod-tproxy=y" >> .config
-          echo "CONFIG_PACKAGE_iptables-mod-extra=y" >> .config
+          # # 添加 OpenClash 相关依赖
+          # echo "CONFIG_PACKAGE_kmod-tun=y" >> .config
+          # echo "CONFIG_PACKAGE_kmod-inet-diag=y" >> .config
+          # echo "CONFIG_PACKAGE_iptables-mod-tproxy=y" >> .config
+          # echo "CONFIG_PACKAGE_iptables-mod-extra=y" >> .config
           
           echo "✅ OpenClash 已启用"
         else
