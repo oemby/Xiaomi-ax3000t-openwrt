@@ -12,3 +12,9 @@
 
 # Modify default IP
 sed -i 's/192.168.1.1/192.168.11.1/g' package/base-files/luci2/bin/config_generate
+
+# iStore - 使用标准 feeds 方式，注释掉原来的 sparse clone 方式
+# git_sparse_clone main https://github.com/linkease/istore-ui app-store-ui
+# git_sparse_clone main https://github.com/linkease/istore luci
+
+# ./scripts/feeds install -d y -p istore luci-app-store

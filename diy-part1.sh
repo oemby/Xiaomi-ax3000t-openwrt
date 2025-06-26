@@ -83,9 +83,12 @@ sed -i "s/luci-app-vlmcsd//g" include/target.mk
 
 echo 'src-git istore https://github.com/linkease/istore;main' >> feeds.conf.default
 # iStore - 使用标准 feeds 方式，注释掉原来的 sparse clone 方式
+
+./scripts/feeds update -a
+
 git_sparse_clone main https://github.com/linkease/istore-ui app-store-ui
 git_sparse_clone main https://github.com/linkease/istore luci
-./scripts/feeds update -a
+
 ./scripts/feeds install -d y -p istore luci-app-store
 ./scripts/feeds install -a
 
