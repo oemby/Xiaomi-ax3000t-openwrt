@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2019-2020 P3TERX <https://p3terx.com>
+# Copyright (c) 2019~ P3TERX <https://p3terx.com>
 #
 # This is free software, licensed under the MIT License.
 # See /LICENSE for more information.
@@ -99,7 +99,7 @@ jobs:
       if: env.CACHE_TOOLCHAIN == 'true'
       uses: oemby/cachewrtbuild@main
       with:
-        ccache: true
+        ccache: false
         mixkey: ${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
         prefix: ${{ env.OPENWRT_PATH }}
       
@@ -109,7 +109,6 @@ jobs:
         chmod +x $DIY_P1_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P1_SH
-        
 
     - name: Update feeds
       run: cd openwrt && ./scripts/feeds update -a
@@ -117,11 +116,7 @@ jobs:
     - name: Install feeds
       run: cd openwrt && ./scripts/feeds install -a
 
-    # - name: Install ddns-go
-    #   run: |
-    #     cd openwrt
-    #     git clone https://github.com/sirpdboy/luci-app-ddns-go.git package/ddns-go
-
+    # 条件性安装 OpenClash 源码
     - name: Install OpenClash Source (Conditional)
       if: github.event.inputs.install_openclash == 'true'
       run: |
@@ -135,6 +130,7 @@ jobs:
         rm -rf luci-theme-argon
         git clone -b master https://github.com/jerrykuku/luci-theme-argon.git luci-theme-argon
 
+    # 首先加载基础配置文件
     - name: Load custom configuration
       run: |
         [ -e files ] && mv files openwrt/files
@@ -142,11 +138,11 @@ jobs:
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
+
+    # 现在配置文件存在,安全地修改 OpenClash 配置
     - name: Configure OpenClash in .config
       run: |
         cd openwrt
-        
-        # 方法1: 根据条件启用/禁用 OpenClash
         if [ "${{ github.event.inputs.install_openclash }}" = "true" ]; then
           # 启用 OpenClash
           sed -i 's/# CONFIG_PACKAGE_luci-app-openclash is not set/CONFIG_PACKAGE_luci-app-openclash=y/' .config
@@ -164,6 +160,7 @@ jobs:
           sed -i 's/CONFIG_PACKAGE_luci-app-openclash=y/# CONFIG_PACKAGE_luci-app-openclash is not set/' .config
           # 或者删除配置行
           sed -i '/CONFIG_PACKAGE_luci-app-openclash/d' .config
+          # 添加禁用配置
           echo "# CONFIG_PACKAGE_luci-app-openclash is not set" >> .config
           sed -i 's/CONFIG_PACKAGE_kmod-tun=y/# CONFIG_PACKAGE_kmod-tun is not set/' .config
           sed -i 's/CONFIG_PACKAGE_kmod-inet-diag=y/# CONFIG_PACKAGE_kmod-inet-diag is not set/' .config
