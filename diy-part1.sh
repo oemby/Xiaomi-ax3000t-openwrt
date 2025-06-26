@@ -39,7 +39,9 @@ git clone --depth=1 https://github.com/Jason6111/luci-app-netdata package/luci-a
 git clone --depth=1 https://github.com/sirpdboy/luci-app-wizard package/luci-app-wizard
 
 # 科学上网插件
-git_sparse_clone master https://github.com/vernesong/OpenClash luci-app-openclash
+# git_sparse_clone master https://github.com/vernesong/OpenClash luci-app-openclash
+
+
 # git clone --depth=1 -b main https://github.com/fw876/helloworld package/luci-app-ssr-plus
 # git clone --depth=1 -b lede https://github.com/pymumu/luci-app-smartdns package/luci-app-smartdns
 # git clone --depth=1 https://github.com/pymumu/openwrt-smartdns package/smartdns

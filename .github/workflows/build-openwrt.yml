@@ -12,10 +12,20 @@ name: Build OpenWrt
 
 on:
   repository_dispatch:
+
+
   schedule:
     - cron: 0 3 */14 * *
   workflow_dispatch:
     inputs:
+      # install_openclash:
+      #   description: 'Install OpenClash'
+      #   required: true
+      #   default: 'true'
+      #   type: choice
+      #   options:
+      #   - 'true'
+      #   - 'false'
       ssh:
         description: 'SSH connection to Actions'
         required: false
@@ -87,6 +97,32 @@ jobs:
         cd openwrt
         echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
     
+    # - name: Install OpenClash (Conditional)
+    #   if: github.event.inputs.install_openclash == 'true'
+    #   run: |
+    #     cd openwrt/package
+    #     git clone -b master https://github.com/vernesong/OpenClash.git luci-app-openclash
+
+    # - name: Configure OpenClash in .config
+    #   run: |
+    #     cd openwrt
+        
+    #     # 方法1: 根据条件启用/禁用 OpenClash
+    #     if [ "${{ github.event.inputs.install_openclash }}" = "true" ]; then
+    #       # 启用 OpenClash
+    #       sed -i 's/# CONFIG_PACKAGE_luci-app-openclash is not set/CONFIG_PACKAGE_luci-app-openclash=y/' .config
+    #       # 或者直接添加配置项（如果不存在）
+    #       if ! grep -q "CONFIG_PACKAGE_luci-app-openclash" .config; then
+    #         echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
+    #       fi
+    #     else
+    #       # 禁用 OpenClash
+    #       sed -i 's/CONFIG_PACKAGE_luci-app-openclash=y/# CONFIG_PACKAGE_luci-app-openclash is not set/' .config
+    #       # 或者删除配置行
+    #       sed -i '/CONFIG_PACKAGE_luci-app-openclash/d' .config
+    #       echo "# CONFIG_PACKAGE_luci-app-openclash is not set" >> .config
+    #     fi
+
     - name: Generate Variables
       run: |
         cp $CONFIG_FILE $OPENWRT_PATH/.config
@@ -133,7 +169,12 @@ jobs:
       run: |
         cd openwrt
         git clone https://github.com/sirpdboy/luci-app-ddns-go.git package/ddns-go
-
+    # - name: Install OpenClash
+    #   run: |
+    #     cd openwrt/package
+    #     git clone -b master https://github.com/vernesong/OpenClash.git luci-app-openclash
+    #     sed
+    
     - name: Install argon
       run: |
         cd openwrt/package/lean
