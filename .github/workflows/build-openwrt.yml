@@ -136,13 +136,13 @@ jobs:
     - name: Install feeds
       run: cd openwrt && ./scripts/feeds install -a
 
-    # 条件性安装 OpenClash 源码
-    - name: Install OpenClash Source (Conditional)
-      if: github.event.inputs.install_openclash == 'true'
-      run: |
-        cd openwrt/package
-        git clone -b master https://github.com/vernesong/OpenClash.git luci-app-openclash
-        echo "OpenClash 源码已安装"
+    # 条件性安装 OpenClash 源码 (此处跳过即可 if DIY.part1,sh 已配置)
+    # - name: Install OpenClash Source (Conditional)
+    #   if: github.event.inputs.install_openclash == 'true'
+    #   run: |
+    #     cd openwrt/package
+    #     git clone -b master https://github.com/vernesong/OpenClash.git luci-app-openclash
+    #     echo "OpenClash 源码已安装"
 
     - name: Install argon theme
       run: |

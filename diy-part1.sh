@@ -9,6 +9,11 @@
 # File name: diy-part1.sh
 # Description: OpenWrt DIY script part 1 (Before Update feeds)
 #
+
+# 添加 iStore feeds（推荐的标准方式）
+echo >> feeds.conf.default
+echo 'src-git istore https://github.com/linkease/istore;main' >> feeds.conf.default
+
 # 移除要替换的包
 rm -rf feeds/packages/net/mosdns
 rm -rf feeds/packages/net/msd_lite
@@ -28,6 +33,7 @@ function git_sparse_clone() {
   mv -f $@ ../package
   cd .. && rm -rf $repodir
 }
+
 # Uncomment a feed source
 #sed -i 's/^#\(.*helloworld\)/\1/' feeds.conf.default
 
@@ -41,11 +47,9 @@ git clone --depth=1 https://github.com/sirpdboy/luci-app-wizard package/luci-app
 # 科学上网插件
 git_sparse_clone master https://github.com/vernesong/OpenClash luci-app-openclash
 
-
 # git clone --depth=1 -b main https://github.com/fw876/helloworld package/luci-app-ssr-plus
 # git clone --depth=1 -b lede https://github.com/pymumu/luci-app-smartdns package/luci-app-smartdns
 # git clone --depth=1 https://github.com/pymumu/openwrt-smartdns package/smartdns
-
 
 # Add a feed source
 # echo 'src-git helloworld https://github.com/fw876/helloworld' >>feeds.conf.default
@@ -56,13 +60,12 @@ git_sparse_clone master https://github.com/vernesong/OpenClash luci-app-openclas
 # sed -i "/helloworld/d" "feeds.conf.default"
 # echo "src-git helloworld https://github.com/fw876/helloworld.git" >> "feeds.conf.default"
 
-
 #git_sparse_clone main https://github.com/linkease/nas-packages-luci luci/luci-app-ddnsto
 #git_sparse_clone master https://github.com/linkease/nas-packages network/services/ddnsto
 
-# iStore
-git_sparse_clone main https://github.com/linkease/istore-ui app-store-ui
-git_sparse_clone main https://github.com/linkease/istore luci
+# iStore - 使用标准 feeds 方式，注释掉原来的 sparse clone 方式
+# git_sparse_clone main https://github.com/linkease/istore-ui app-store-ui
+# git_sparse_clone main https://github.com/linkease/istore luci
 
 # 在线用户
 git_sparse_clone main https://github.com/haiibo/packages luci-app-onliner
@@ -85,3 +88,6 @@ sed -i "s/luci-app-vlmcsd//g" include/target.mk
 ./scripts/feeds clean
 ./scripts/feeds update -a
 ./scripts/feeds install -a
+
+# 专门安装 iStore（确保正确安装）
+./scripts/feeds install -d y -p istore luci-app-store
