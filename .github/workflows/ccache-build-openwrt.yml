@@ -157,7 +157,7 @@ jobs:
 
     - name: Cache Toolchain
       if: env.CACHE_TOOLCHAIN == 'true'
-      uses: oemby/cachewrtbuild@main
+      uses: Oemby/cachewrtbuild@main
       with:
         ccache: true
         mixkey: ${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
