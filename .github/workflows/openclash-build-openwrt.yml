@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2019-2020 P3TERX <https://p3terx.com>
+# Copyright (c) 2019~ P3TERX <https://p3terx.com>
 #
 # This is free software, licensed under the MIT License.
 # See /LICENSE for more information.
@@ -12,8 +12,6 @@ name: OpenClash Build OpenWrt
 
 on:
   repository_dispatch:
-
-
   schedule:
     - cron: 0 3 */14 * *
   workflow_dispatch:
@@ -96,36 +94,92 @@ jobs:
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         cd openwrt
         echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
-    
-    - name: Install OpenClash (Conditional)
+
+    - name: Cache Toolchain
+      if: env.CACHE_TOOLCHAIN == 'true'
+      uses: HiGarfield/cachewrtbuild@main
+      with:
+        ccache: false
+        mixkey: ${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
+        prefix: ${{ env.OPENWRT_PATH }}
+      
+    - name: Load custom feeds
+      run: |
+        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
+        chmod +x $DIY_P1_SH
+        cd openwrt
+        $GITHUB_WORKSPACE/$DIY_P1_SH
+
+    - name: Update feeds
+      run: cd openwrt && ./scripts/feeds update -a
+
+    - name: Install feeds
+      run: cd openwrt && ./scripts/feeds install -a
+
+    # 条件性安装 OpenClash 源码
+    - name: Install OpenClash Source (Conditional)
       if: github.event.inputs.install_openclash == 'true'
       run: |
         cd openwrt/package
         git clone -b master https://github.com/vernesong/OpenClash.git luci-app-openclash
+        echo "OpenClash 源码已安装"
 
+    - name: Install argon theme
+      run: |
+        cd openwrt/package/lean
+        rm -rf luci-theme-argon
+        git clone -b master https://github.com/jerrykuku/luci-theme-argon.git luci-theme-argon
+
+    # 首先加载基础配置文件
+    - name: Load custom configuration
+      run: |
+        [ -e files ] && mv files openwrt/files
+        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+        chmod +x $DIY_P2_SH
+        cd openwrt
+        $GITHUB_WORKSPACE/$DIY_P2_SH
+
+    # 现在配置文件存在,安全地修改 OpenClash 配置
     - name: Configure OpenClash in .config
       run: |
         cd openwrt
         
-        # Option 1: 根据条件启用/禁用 OpenClash
+        echo "当前 OpenClash 安装选项: ${{ github.event.inputs.install_openclash }}"
+        
         if [ "${{ github.event.inputs.install_openclash }}" = "true" ]; then
-          # 启用 OpenClash
-          sed -i 's/# CONFIG_PACKAGE_luci-app-openclash is not set/CONFIG_PACKAGE_luci-app-openclash=y/' .config
-          # 或者直接添加配置项（如果不存在）
-          if ! grep -q "CONFIG_PACKAGE_luci-app-openclash" .config; then
-            echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
-          fi
-        else
-          # 禁用 OpenClash
-          sed -i 's/CONFIG_PACKAGE_luci-app-openclash=y/# CONFIG_PACKAGE_luci-app-openclash is not set/' .config
-          # 或者删除配置行
+          echo "正在启用 OpenClash..."
+          
+          # 删除任何现有的 OpenClash 配置行
           sed -i '/CONFIG_PACKAGE_luci-app-openclash/d' .config
+          
+          # 添加 OpenClash 配置
+          echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
+          
+          # 添加 OpenClash 相关依赖
+          echo "CONFIG_PACKAGE_kmod-tun=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-inet-diag=y" >> .config
+          echo "CONFIG_PACKAGE_iptables-mod-tproxy=y" >> .config
+          echo "CONFIG_PACKAGE_iptables-mod-extra=y" >> .config
+          
+          echo "✅ OpenClash 已启用"
+        else
+          echo "正在禁用 OpenClash..."
+          
+          # 删除任何现有的 OpenClash 配置行
+          sed -i '/CONFIG_PACKAGE_luci-app-openclash/d' .config
+          
+          # 添加禁用配置
           echo "# CONFIG_PACKAGE_luci-app-openclash is not set" >> .config
+          
+          echo "❌ OpenClash 已禁用"
         fi
+        
+        # 显示当前配置状态
+        echo "当前 OpenClash 配置状态:"
+        grep -E "CONFIG_PACKAGE_luci-app-openclash" .config || echo "未找到 OpenClash 配置"
 
     - name: Generate Variables
       run: |
-        cp $CONFIG_FILE $OPENWRT_PATH/.config
         cd $OPENWRT_PATH
         make defconfig > /dev/null 2>&1
         SOURCE_REPO="$(echo $REPO_URL | awk -F '/' '{print $(NF)}')"
@@ -142,52 +196,6 @@ jobs:
         echo "COMMIT_MESSAGE=$COMMIT_MESSAGE" >> $GITHUB_ENV
         COMMIT_HASH=$(git show -s --date=short --format="hash: %H")
         echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_ENV
-
-    - name: Cache Toolchain
-      if: env.CACHE_TOOLCHAIN == 'true'
-      uses: HiGarfield/cachewrtbuild@main
-      with:
-        ccache: false
-        mixkey: ${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
-        prefix: ${{ env.OPENWRT_PATH }}
-      
-    - name: Load custom feeds
-      run: |
-        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
-        chmod +x $DIY_P1_SH
-        cd openwrt
-        $GITHUB_WORKSPACE/$DIY_P1_SH
-        
-
-    - name: Update feeds
-      run: cd openwrt && ./scripts/feeds update -a
-
-    - name: Install feeds
-      run: cd openwrt && ./scripts/feeds install -a
-
-    # - name: Install ddns-go
-    #   run: |
-    #     cd openwrt
-    #     git clone https://github.com/sirpdboy/luci-app-ddns-go.git package/ddns-go
-    - name: Install OpenClash
-      run: |
-        cd openwrt/package
-        git clone -b master https://github.com/vernesong/OpenClash.git luci-app-openclash
-        sed
-    
-    - name: Install argon
-      run: |
-        cd openwrt/package/lean
-        rm -rf luci-theme-argon
-        git clone -b master https://github.com/jerrykuku/luci-theme-argon.git luci-theme-argon
-
-    - name: Load custom configuration
-      run: |
-        [ -e files ] && mv files openwrt/files
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
-        chmod +x $DIY_P2_SH
-        cd openwrt
-        $GITHUB_WORKSPACE/$DIY_P2_SH
 
     - name: SSH connection to Actions
       uses: P3TERX/ssh2actions@v1.0.0
@@ -291,6 +299,7 @@ jobs:
           - 🚀 内核版本: ${{ env.KERNEL }}
           - 🌐 默认地址: 192.168.11.1
           - 🔑 默认密码: password
+          - 🔥 OpenClash: ${{ github.event.inputs.install_openclash == 'true' && '✅ 已安装' || '❌ 未安装' }}
           ### 🧊 固件版本
           - 固件编译前最后一次➦[主源码](${{ env.REPO_URL }})更新记录
           - ${{ env.COMMIT_AUTHOR }}
