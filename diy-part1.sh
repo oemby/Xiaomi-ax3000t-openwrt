@@ -9,11 +9,6 @@
 # File name: diy-part1.sh
 # Description: OpenWrt DIY script part 1 (Before Update feeds)
 #
-
-# 添加 iStore feeds（推荐的标准方式）
-echo >> feeds.conf.default
-echo 'src-git istore https://github.com/linkease/istore;main' >> feeds.conf.default
-
 # 移除要替换的包
 rm -rf feeds/packages/net/mosdns
 rm -rf feeds/packages/net/msd_lite
@@ -63,6 +58,9 @@ git_sparse_clone master https://github.com/vernesong/OpenClash luci-app-openclas
 #git_sparse_clone main https://github.com/linkease/nas-packages-luci luci/luci-app-ddnsto
 #git_sparse_clone master https://github.com/linkease/nas-packages network/services/ddnsto
 
+# 添加 iStore feeds（推荐的标准方式）
+echo >> feeds.conf.default
+echo 'src-git istore https://github.com/linkease/istore;main' >> feeds.conf.default
 # iStore - 使用标准 feeds 方式，注释掉原来的 sparse clone 方式
 # git_sparse_clone main https://github.com/linkease/istore-ui app-store-ui
 # git_sparse_clone main https://github.com/linkease/istore luci
