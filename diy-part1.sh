@@ -83,7 +83,7 @@ sed -i "s/luci-app-vlmcsd//g" include/target.mk
 echo >> feeds.conf.default
 echo 'src-git istore https://github.com/linkease/istore;main' >> feeds.conf.default
 git_sparse_clone main https://github.com/linkease/istore-ui app-store-ui
-git_sparse_clone main https://github.com/linkease/istore luci
+git_sparse_clone main https://github.com/linkease/istore luci-app-store
 
 ./scripts/feeds update -a
 
