@@ -16,6 +16,14 @@ on:
     - cron: 0 3 */14 * *
   workflow_dispatch:
     inputs:
+      install_openclash:
+        description: 'Install OpenClash'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+        - 'true'
+        - 'false'
       ssh:
         description: 'SSH connection to Actions'
         required: false
@@ -180,10 +188,41 @@ jobs:
     - name: Install feeds
       run: cd openwrt && ./scripts/feeds install -a
 
-    # - name: Install ddns-go
-    #   run: |
-    #     cd openwrt
-    #     git clone https://github.com/sirpdboy/luci-app-ddns-go.git package/ddns-go
+    - name: Install OpenClash Source (Conditional)
+      if: github.event.inputs.install_openclash == 'true'
+      run: |
+        cd openwrt/package
+        git clone -b master https://github.com/vernesong/OpenClash.git luci-app-openclash
+        echo "OpenClash 源码已安装"
+    - name: Configure OpenClash in .config
+      run: |
+        cd openwrt
+        # 方法1: 根据条件启用/禁用 OpenClash
+        if [ "${{ github.event.inputs.install_openclash }}" = "true" ]; then
+          # 启用 OpenClash
+        sed -i 's/# CONFIG_PACKAGE_luci-app-openclash is not set/CONFIG_PACKAGE_luci-app-openclash=y/' .config
+          # 或者直接添加配置项（如果不存在）
+        if ! grep -q "CONFIG_PACKAGE_luci-app-openclash" .config; then
+            echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
+          # 添加 OpenClash 相关依赖
+            echo "CONFIG_PACKAGE_kmod-tun=y" >> .config
+            echo "CONFIG_PACKAGE_kmod-inet-diag=y" >> .config
+            echo "CONFIG_PACKAGE_iptables-mod-tproxy=y" >> .config
+            echo "CONFIG_PACKAGE_iptables-mod-extra=y" >> .config            
+          fi
+        else
+          # 禁用 OpenClash
+          sed -i 's/CONFIG_PACKAGE_luci-app-openclash=y/# CONFIG_PACKAGE_luci-app-openclash is not set/' .config
+          # 或者删除配置行
+          sed -i '/CONFIG_PACKAGE_luci-app-openclash/d' .config
+          echo "# CONFIG_PACKAGE_luci-app-openclash is not set" >> .config
+
+          # 禁用 OpenClash 相关依赖
+          sed -i 's/CONFIG_PACKAGE_kmod-tun=y/# CONFIG_PACKAGE_kmod-tun is not set/' .config
+          sed -i 's/CONFIG_PACKAGE_kmod-inet-diag=y/# CONFIG_PACKAGE_kmod-inet-diag is not set/' .config
+          sed -i 's/CONFIG_PACKAGE_iptables-mod-tproxy=y/# CONFIG_PACKAGE_iptables-mod-tproxy is not set/' .config
+          sed -i 's/CONFIG_PACKAGE_iptables-mod-extra=y/# CONFIG_PACKAGE_iptables-mod-extra is not set/' .config
+        fi
 
     - name: Install argon
       run: |
