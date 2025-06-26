@@ -40,7 +40,7 @@ git clone --depth=1 https://github.com/Jason6111/luci-app-netdata package/luci-a
 git clone --depth=1 https://github.com/sirpdboy/luci-app-wizard package/luci-app-wizard
 
 # 科学上网插件
-git_sparse_clone master https://github.com/vernesong/OpenClash luci-app-openclash
+git_sparse_clone master https://github.com/vernesong/OpenClash package/luci-app-openclash
 
 # git clone --depth=1 -b main https://github.com/fw876/helloworld package/luci-app-ssr-plus
 # git clone --depth=1 -b lede https://github.com/pymumu/luci-app-smartdns package/luci-app-smartdns
@@ -60,10 +60,6 @@ git_sparse_clone master https://github.com/vernesong/OpenClash luci-app-openclas
 
 # 添加 iStore feeds（推荐的标准方式）
 echo >> feeds.conf.default
-echo 'src-git istore https://github.com/linkease/istore;main' >> feeds.conf.default
-# iStore - 使用标准 feeds 方式，注释掉原来的 sparse clone 方式
-# git_sparse_clone main https://github.com/linkease/istore-ui app-store-ui
-# git_sparse_clone main https://github.com/linkease/istore luci
 
 # 在线用户
 git_sparse_clone main https://github.com/haiibo/packages luci-app-onliner
@@ -84,8 +80,13 @@ sed -i "s/luci-app-vlmcsd//g" include/target.mk
 # ./scripts/feeds install -a -f -p helloworld
 
 ./scripts/feeds clean
+
+echo 'src-git istore https://github.com/linkease/istore;main' >> feeds.conf.default
+# iStore - 使用标准 feeds 方式，注释掉原来的 sparse clone 方式
+git_sparse_clone main https://github.com/linkease/istore-ui app-store-ui
+git_sparse_clone main https://github.com/linkease/istore luci
 ./scripts/feeds update -a
+./scripts/feeds install -d y -p istore luci-app-store
 ./scripts/feeds install -a
 
 # 专门安装 iStore（确保正确安装）
-./scripts/feeds install -d y -p istore luci-app-store
