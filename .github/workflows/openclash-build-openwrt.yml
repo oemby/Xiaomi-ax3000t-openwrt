@@ -94,6 +94,26 @@ jobs:
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         cd openwrt
         echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
+    
+    - name: Generate Variables
+      run: |
+        cp $CONFIG_FILE $OPENWRT_PATH/.config
+        cd $OPENWRT_PATH
+        make defconfig > /dev/null 2>&1
+        SOURCE_REPO="$(echo $REPO_URL | awk -F '/' '{print $(NF)}')"
+        echo "SOURCE_REPO=$SOURCE_REPO" >> $GITHUB_ENV
+        DEVICE_TARGET=$(cat .config | grep CONFIG_TARGET_BOARD | awk -F '"' '{print $2}')
+        echo "DEVICE_TARGET=$DEVICE_TARGET" >> $GITHUB_ENV
+        DEVICE_SUBTARGET=$(cat .config | grep CONFIG_TARGET_SUBTARGET | awk -F '"' '{print $2}')
+        echo "DEVICE_SUBTARGET=$DEVICE_SUBTARGET" >> $GITHUB_ENV
+        COMMIT_AUTHOR=$(git show -s --date=short --format="作者: %an")
+        echo "COMMIT_AUTHOR=$COMMIT_AUTHOR" >> $GITHUB_ENV
+        COMMIT_DATE=$(git show -s --date=short --format="时间: %ci")
+        echo "COMMIT_DATE=$COMMIT_DATE" >> $GITHUB_ENV
+        COMMIT_MESSAGE=$(git show -s --date=short --format="内容: %s")
+        echo "COMMIT_MESSAGE=$COMMIT_MESSAGE" >> $GITHUB_ENV
+        COMMIT_HASH=$(git show -s --date=short --format="hash: %H")
+        echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_ENV
 
     - name: Cache Toolchain
       if: env.CACHE_TOOLCHAIN == 'true'
@@ -116,7 +136,7 @@ jobs:
     - name: Install feeds
       run: cd openwrt && ./scripts/feeds install -a
 
-    # # 条件性安装 OpenClash 源码
+    # 条件性安装 OpenClash 源码 (此处跳过即可 if DIY.part1,sh 已配置)
     # - name: Install OpenClash Source (Conditional)
     #   if: github.event.inputs.install_openclash == 'true'
     #   run: |
@@ -134,7 +154,7 @@ jobs:
     - name: Load custom configuration
       run: |
         [ -e files ] && mv files openwrt/files
-        [ -e $CONFIG_FILE ] && cp $CONFIG_FILE openwrt/.config # 改为 cp 而不是 mv
+        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
@@ -143,62 +163,33 @@ jobs:
     - name: Configure OpenClash in .config
       run: |
         cd openwrt
-        
-        echo "当前 OpenClash 安装选项: ${{ github.event.inputs.install_openclash }}"
-        
         if [ "${{ github.event.inputs.install_openclash }}" = "true" ]; then
-          echo "正在启用 OpenClash..."
-          
-          # 删除任何现有的 OpenClash 配置行
-          sed -i '/CONFIG_PACKAGE_luci-app-openclash/d' .config
-          
-          # 添加 OpenClash 配置
-          echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
-          
-          # # 添加 OpenClash 相关依赖
-          # echo "CONFIG_PACKAGE_kmod-tun=y" >> .config
-          # echo "CONFIG_PACKAGE_kmod-inet-diag=y" >> .config
-          # echo "CONFIG_PACKAGE_iptables-mod-tproxy=y" >> .config
-          # echo "CONFIG_PACKAGE_iptables-mod-extra=y" >> .config
-          
-          echo "✅ OpenClash 已启用"
+          # 启用 OpenClash
+          sed -i 's/# CONFIG_PACKAGE_luci-app-openclash is not set/CONFIG_PACKAGE_luci-app-openclash=y/' .config
+          # 或者直接添加配置项（如果不存在）
+          if ! grep -q "CONFIG_PACKAGE_luci-app-openclash" .config; then
+            echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
+            # 添加 OpenClash 相关依赖
+            echo "CONFIG_PACKAGE_kmod-tun=y" >> .config
+            echo "CONFIG_PACKAGE_kmod-inet-diag=y" >> .config
+            echo "CONFIG_PACKAGE_iptables-mod-tproxy=y" >> .config
+            echo "CONFIG_PACKAGE_iptables-mod-extra=y" >> .config            
+          fi
         else
-          echo "正在禁用 OpenClash..."
-          
-          # 删除任何现有的 OpenClash 配置行
+          # 禁用 OpenClash
+          sed -i 's/CONFIG_PACKAGE_luci-app-openclash=y/# CONFIG_PACKAGE_luci-app-openclash is not set/' .config
+          # 或者删除配置行
           sed -i '/CONFIG_PACKAGE_luci-app-openclash/d' .config
-          
           # 添加禁用配置
           echo "# CONFIG_PACKAGE_luci-app-openclash is not set" >> .config
-          
-          echo "❌ OpenClash 已禁用"
+          sed -i 's/CONFIG_PACKAGE_kmod-tun=y/# CONFIG_PACKAGE_kmod-tun is not set/' .config
+          sed -i 's/CONFIG_PACKAGE_kmod-inet-diag=y/# CONFIG_PACKAGE_kmod-inet-diag is not set/' .config
+          sed -i 's/CONFIG_PACKAGE_iptables-mod-tproxy=y/# CONFIG_PACKAGE_iptables-mod-tproxy is not set/' .config
+          sed -i 's/CONFIG_PACKAGE_iptables-mod-extra=y/# CONFIG_PACKAGE_iptables-mod-extra is not set/' .config
         fi
-        
         # 显示当前配置状态
         echo "当前 OpenClash 配置状态:"
         grep -E "CONFIG_PACKAGE_luci-app-openclash" .config || echo "未找到 OpenClash 配置"
-
-    - name: Generate Variables
-      run: |
-        # 检查文件是否存在，如果不存在就跳过复制
-        [ -e $CONFIG_FILE ] && cp $CONFIG_FILE $OPENWRT_PATH/.config
-        cd $OPENWRT_PATH
-        make defconfig > /dev/null 2>&1
-        SOURCE_REPO="$(echo $REPO_URL | awk -F '/' '{print $(NF)}')"
-        echo "SOURCE_REPO=$SOURCE_REPO" >> $GITHUB_ENV
-        DEVICE_TARGET=$(cat .config | grep CONFIG_TARGET_BOARD | awk -F '"' '{print $2}')
-        echo "DEVICE_TARGET=$DEVICE_TARGET" >> $GITHUB_ENV
-        DEVICE_SUBTARGET=$(cat .config | grep CONFIG_TARGET_SUBTARGET | awk -F '"' '{print $2}')
-        echo "DEVICE_SUBTARGET=$DEVICE_SUBTARGET" >> $GITHUB_ENV
-        COMMIT_AUTHOR=$(git show -s --date=short --format="作者: %an")
-        echo "COMMIT_AUTHOR=$COMMIT_AUTHOR" >> $GITHUB_ENV
-        COMMIT_DATE=$(git show -s --date=short --format="时间: %ci")
-        echo "COMMIT_DATE=$COMMIT_DATE" >> $GITHUB_ENV
-        COMMIT_MESSAGE=$(git show -s --date=short --format="内容: %s")
-        echo "COMMIT_MESSAGE=$COMMIT_MESSAGE" >> $GITHUB_ENV
-        COMMIT_HASH=$(git show -s --date=short --format="hash: %H")
-        echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_ENV
-
     - name: SSH connection to Actions
       uses: P3TERX/ssh2actions@v1.0.0
       if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
@@ -289,7 +280,7 @@ jobs:
       with:
         allowUpdates: true
         token: ${{ secrets.GITHUB_TOKEN }}
-        name: (OP) XiaoMi AX3000T ${{ steps.tag.outputs.release_tag }}
+        name: XiaoMi AX3000T ${{ steps.tag.outputs.release_tag }}
         tag: ${{ steps.tag.outputs.release_tag }}
         artifacts: ${{ env.FIRMWARE }}/*
         body: |
@@ -301,7 +292,6 @@ jobs:
           - 🚀 内核版本: ${{ env.KERNEL }}
           - 🌐 默认地址: 192.168.11.1
           - 🔑 默认密码: password
-          - 🔥 OpenClash: ${{ github.event.inputs.install_openclash == 'true' && '✅ 已安装' || '❌ 未安装' }}
           ### 🧊 固件版本
           - 固件编译前最后一次➦[主源码](${{ env.REPO_URL }})更新记录
           - ${{ env.COMMIT_AUTHOR }}
