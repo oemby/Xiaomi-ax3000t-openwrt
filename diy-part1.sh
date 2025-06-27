@@ -36,8 +36,6 @@ function git_sparse_clone() {
 git clone --depth=1 https://github.com/esirplayground/luci-app-poweroff package/luci-app-poweroff
 git clone --depth=1 https://github.com/destan19/OpenAppFilter package/OpenAppFilter
 git clone --depth=1 https://github.com/Jason6111/luci-app-netdata package/luci-app-netdata
-# Add package/luci-app-wizard
-git clone --depth=1 https://github.com/sirpdboy/luci-app-wizard package/luci-app-wizard
 
 # 科学上网插件
 git_sparse_clone master https://github.com/vernesong/OpenClash package/luci-app-openclash
@@ -82,8 +80,11 @@ sed -i "s/luci-app-vlmcsd//g" include/target.mk
 # ./scripts/feeds install -a -f -p helloworld
 
 ./scripts/feeds clean
-# 添加 iStore feeds（推荐的标准方式）
+
 echo >> feeds.conf.default
+# luci-app-wizard - 网络配置向导 (luci-app-quickstart 的最佳替代)
+git clone --depth=1 https://github.com/sirpdboy/luci-app-wizard package/luci-app-wizard
+# 添加 iStore feeds（推荐的标准方式）
 echo 'src-git istore https://github.com/linkease/istore;main' >> feeds.conf.default
 git_sparse_clone main https://github.com/linkease/istore-ui app-store-ui
 git_sparse_clone main https://github.com/linkease/istore luci-app-store
