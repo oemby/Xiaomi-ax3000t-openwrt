@@ -60,6 +60,9 @@ git_sparse_clone master https://github.com/vernesong/OpenClash package/luci-app-
 
 
 # iStore - 使用标准 feeds 方式，注释掉原来的 sparse clone 方式
+# git_sparse_clone main https://github.com/linkease/istore-ui app-store-ui
+# git_sparse_clone main https://github.com/linkease/istore luci
+
 # 在线用户
 git_sparse_clone main https://github.com/haiibo/packages luci-app-onliner
 sed -i '$i uci set nlbwmon.@nlbwmon[0].refresh_interval=2s' package/lean/default-settings/files/zzz-default-settings
@@ -86,6 +89,6 @@ git_sparse_clone main https://github.com/linkease/istore-ui app-store-ui
 git_sparse_clone main https://github.com/linkease/istore luci-app-store
 
 ./scripts/feeds update -a
-
+# 专门安装 iStore（确保正确安装）
 ./scripts/feeds install -d y -p istore luci-app-store
 ./scripts/feeds install -a
