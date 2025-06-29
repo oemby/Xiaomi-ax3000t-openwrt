@@ -48,9 +48,9 @@ git_sparse_clone master https://github.com/vernesong/OpenClash package/luci-app-
 
 # Add a feed source
 # echo 'src-git helloworld https://github.com/fw876/helloworld' >>feeds.conf.default
-# echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall' >>feeds.conf.default
-echo 'src-git passwall_luci https://github.com/xiaorouji/openwrt-passwall.git' >>feeds.conf.default
-# echo 'src-git passwall_package https://github.com/xiaorouji/openwrt-passwall-packages' >>feeds.conf.default
+echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall' >> feeds.conf.default
+echo 'src-git passwall_luci https://github.com/xiaorouji/openwrt-passwall.git' >> feeds.conf.default
+echo 'src-git passwall_package https://github.com/xiaorouji/openwrt-passwall-packages' >> feeds.conf.default
 
 # sed -i "/helloworld/d" "feeds.conf.default"
 # echo "src-git helloworld https://github.com/fw876/helloworld.git" >> "feeds.conf.default"
@@ -83,7 +83,7 @@ sed -i "s/luci-app-vlmcsd//g" include/target.mk
 
 ./scripts/feeds clean
 
-echo >> feeds.conf.default
+# echo >> feeds.conf.default
 # luci-app-wizard - 网络配置向导 (luci-app-quickstart 的最佳替代)
 git clone --depth=1 https://github.com/sirpdboy/luci-app-wizard package/luci-app-wizard
 # 添加 iStore feeds（推荐的标准方式）
