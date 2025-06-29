@@ -15,9 +15,10 @@ rm -rf feeds/packages/net/msd_lite
 rm -rf feeds/packages/net/smartdns
 rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/luci/themes/luci-theme-netgear
-rm -rf feeds/luci/applications/luci-app-mosdns
 rm -rf feeds/luci/applications/luci-app-serverchan
-# rm -rf feeds/luci/applications/luci-app-netdata
+rm -rf feeds/luci/applications/luci-app-netdata
+# rm -rf feeds/luci/applications/luci-app-mosdns
+
 
 # Git稀疏克隆，只克隆指定目录到本地
 function git_sparse_clone() {
@@ -48,8 +49,8 @@ git_sparse_clone master https://github.com/vernesong/OpenClash package/luci-app-
 
 # Add a feed source
 # echo 'src-git helloworld https://github.com/fw876/helloworld' >>feeds.conf.default
-echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall' >> feeds.conf.default
-echo 'src-git passwall_luci https://github.com/xiaorouji/openwrt-passwall.git' >> feeds.conf.default
+# echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall' >> feeds.conf.default
+# echo 'src-git passwall_luci https://github.com/xiaorouji/openwrt-passwall.git' >> feeds.conf.default
 # echo 'src-git passwall_package https://github.com/xiaorouji/openwrt-passwall-packages' >> feeds.conf.default
 
 # sed -i "/helloworld/d" "feeds.conf.default"
