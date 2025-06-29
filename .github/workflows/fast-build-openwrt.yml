@@ -36,7 +36,7 @@ env:
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: fast.config
-  DIY_P1_SH: diy-part1.sh
+  DIY_P1_SH: fast.sh
   DIY_P2_SH: diy-part2.sh
   UPLOAD_BIN_DIR: false
   UPLOAD_FIRMWARE: true
@@ -83,8 +83,8 @@ jobs:
     - name: Combine Disks
       uses: easimon/maximize-build-space@master
       with:
-        swap-size-mb: 1024
-        temp-reserve-mb: 100
+        swap-size-mb: 2048
+        temp-reserve-mb: 1024
         root-reserve-mb: 1024
 
     - name: Checkout
