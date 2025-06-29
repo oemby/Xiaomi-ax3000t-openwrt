@@ -17,19 +17,27 @@ on:
   schedule:
     - cron: 0 3 */14 * *
   workflow_dispatch:
-    inputs:
-      # install_openclash:
-      #   description: 'Install OpenClash'
-      #   required: true
-      #   default: 'true'
-      #   type: choice
-      #   options:
-      #   - 'true'
-      #   - 'false'
-      ssh:
-        description: 'SSH connection to Actions'
-        required: false
-        default: 'false'
+   inputs:
+    install_openclash:
+      description: 'Install OpenClash'
+      required: true
+      default: 'false'
+      type: choice
+      options:
+      - 'true'
+      - 'false'
+    install_homeproxy:
+      description: 'Install HomeProxy'
+      required: true
+      default: 'false'
+      type: choice
+      options:
+      - 'true'
+      - 'false'
+    ssh:
+      description: 'SSH connection to Actions'
+      required: false
+      default: 'false'
 
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
@@ -181,6 +189,32 @@ jobs:
     #       sed -i '/CONFIG_PACKAGE_luci-app-openclash/d' .config
     #       echo "# CONFIG_PACKAGE_luci-app-openclash is not set" >> .config
     #     fi
+    - name: Configure HomeProxy in .config
+      run: |
+       cd openwrt
+       if [ "${{ github.event.inputs.install_homeproxy }}" = "true" ]; then
+         # 启用 HomeProxy
+         sed -i 's/# CONFIG_PACKAGE_luci-app-homeproxy is not set/CONFIG_PACKAGE_luci-app-homeproxy=y/' .config
+         # 或者直接添加配置项（如果不存在）
+         if ! grep -q "CONFIG_PACKAGE_luci-app-homeproxy" .config; then
+           echo "CONFIG_PACKAGE_luci-app-homeproxy=y" >> .config
+           # 添加 HomeProxy 相关依赖（根据需要）
+           echo "CONFIG_PACKAGE_sing-box=y" >> .config
+           echo "CONFIG_PACKAGE_kmod-tun=y" >> .config
+           echo "CONFIG_PACKAGE_ip-full=y" >> .config
+           echo "CONFIG_PACKAGE_kmod-inet-diag=y" >> .config
+         fi
+       else
+         # 禁用 HomeProxy
+         sed -i 's/CONFIG_PACKAGE_luci-app-homeproxy=y/# CONFIG_PACKAGE_luci-app-homeproxy is not set/' .config
+         # 或者删除配置行
+         sed -i '/CONFIG_PACKAGE_luci-app-homeproxy/d' .config
+         # 添加禁用配置
+         echo "# CONFIG_PACKAGE_luci-app-homeproxy is not set" >> .config
+       fi
+       # 显示当前配置状态
+       echo "当前 HomeProxy 配置状态:"
+       grep -E "CONFIG_PACKAGE_luci-app-homeproxy" .config || echo "未找到 HomeProxy 配置"
 
     - name: SSH connection to Actions
       uses: P3TERX/ssh2actions@v1.0.0
