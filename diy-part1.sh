@@ -86,6 +86,14 @@ sed -i "s/luci-app-vlmcsd//g" include/target.mk
 # echo >> feeds.conf.default
 # luci-app-wizard - 网络配置向导 (luci-app-quickstart 的最佳替代)
 git clone --depth=1 https://github.com/sirpdboy/luci-app-wizard package/luci-app-wizard
+
+
+echo 'src-git homeproxy https://github.com/VIKINGYFY/HomeProxy.git' >> feeds.conf.default
+
+# 在现有 feeds.conf.default 末尾添加
+sed -i '$a src-git homeproxy https://github.com/VIKINGYFY/HomeProxy.git' feeds.conf.default
+
+
 # 添加 iStore feeds（推荐的标准方式）
 # echo 'src-git istore https://github.com/linkease/istore;main' >> feeds.conf.default
 # git_sparse_clone main https://github.com/linkease/istore-ui app-store-ui
@@ -94,4 +102,5 @@ git clone --depth=1 https://github.com/sirpdboy/luci-app-wizard package/luci-app
 ./scripts/feeds update -a
 # 专门安装 iStore（确保正确安装）
 # ./scripts/feeds install -d y -p istore luci-app-store
+./scripts/feeds install -p homeproxy -a
 ./scripts/feeds install -a
